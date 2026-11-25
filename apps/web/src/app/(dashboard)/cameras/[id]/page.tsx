@@ -32,14 +32,31 @@ export default function CameraDetailPage({ params }: { params: Promise<{ id: str
     void api<CameraDto>(`/backend/api/cameras/${id}`).then(setCamera).catch((caught) => setError(caught.message));
     void api<ZoneDto[]>(`/backend/api/cameras/${id}/zones`).then(setZones).catch(() => undefined);
     let socket: Socket | undefined;
+    let closed = false;
+    let loading = false;
     const refresh = () => {
-      setImageUrl(`/backend/api/cameras/${id}/latest?t=${Date.now()}`);
-      void api<DetectionFile>(`/backend/api/cameras/${id}/detections`).then(setDetections).catch(() => undefined);
+      if (closed || loading) return;
+      loading = true;
+      const nextUrl = `/backend/api/cameras/${id}/latest?t=${Date.now()}`;
+      const image = new Image();
+      image.onload = () => {
+        loading = false;
+        if (closed) return;
+        setImageUrl(nextUrl);
+        void api<DetectionFile>(`/backend/api/cameras/${id}/detections`).then(setDetections).catch(() => undefined);
+      };
+      image.onerror = () => {
+        loading = false;
+      };
+      image.src = nextUrl;
     };
     refresh();
     const keepMoving = setInterval(refresh, 100);
     const keepWatching = setInterval(() => {
       void fetch(`/backend/api/cameras/${id}/watch`, { method: "POST", credentials: "include" }).catch(() => undefined);
+      void api<CameraDto>(`/backend/api/cameras/${id}`).then((next) => {
+        if (!closed) setCamera(next);
+      }).catch(() => undefined);
     }, 3000);
     void api<{ token: string }>("/backend/auth/socket-token").then(({ token }) => {
       socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://127.0.0.1:4000", { auth: { token } });
@@ -48,6 +65,7 @@ export default function CameraDetailPage({ params }: { params: Promise<{ id: str
       });
     }).catch(() => undefined);
     return () => {
+      closed = true;
       clearInterval(keepMoving);
       clearInterval(keepWatching);
       socket?.close();
@@ -204,7 +222,7 @@ export default function CameraDetailPage({ params }: { params: Promise<{ id: str
         <label className="flex items-center gap-2"><input type="checkbox" checked={showIds} onChange={(event) => setShowIds(event.target.checked)} /> Show temporary ids</label>
         {detections.inferenceMs != null ? <span className="text-slate-500">{detections.inferenceMs} ms</span> : null}
       </div>
-      <div ref={stageRef} className={`relative mt-4 bg-slate-900 ${full ? "" : "overflow-hidden rounded-2xl border border-line"}`}>
+      <div ref={stageRef} className={`relative mt-4 min-h-40 bg-slate-900 ${full ? "" : "overflow-hidden rounded-2xl border border-line"}`}>
         {imageUrl ? (
           <div
             ref={viewportRef}

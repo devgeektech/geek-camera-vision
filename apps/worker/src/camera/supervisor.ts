@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Camera, DeskZone } from "@visionops/db";
 import { prisma } from "@visionops/db";
@@ -210,7 +210,10 @@ async function handleFrame(cameraId: string, jpeg: Buffer): Promise<void> {
 async function publishLatest(cameraId: string, jpeg: Buffer): Promise<void> {
   const dir = join(env.dataDir, cameraId);
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, "latest.jpg"), jpeg);
+  const finalPath = join(dir, "latest.jpg");
+  const tempPath = join(dir, "latest.jpg.tmp");
+  await writeFile(tempPath, jpeg);
+  await rename(tempPath, finalPath);
 }
 
 async function processFrame(camera: Camera & { zones: DeskZone[] }, jpeg: Buffer, runtime: Runtime): Promise<void> {
