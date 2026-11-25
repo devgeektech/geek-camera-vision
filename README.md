@@ -1,4 +1,4 @@
-# VisionOps
+# Geek vision
 
 On-prem desk occupancy for an office CCTV recorder. It detects people and measures how long each drawn desk is occupied. It does not identify anyone.
 

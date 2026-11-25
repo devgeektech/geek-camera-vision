@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VisionOps",
+  title: "Geek vision",
+  icons: { icon: "/geek-logo.png" },
   description: "Workstation occupancy from the office camera",
 };
 

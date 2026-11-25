@@ -26,7 +26,10 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center px-4">
       <form onSubmit={onSubmit} className="w-full max-w-sm rounded-2xl border border-line bg-white p-8 shadow-sm">
-        <p className="text-sm font-medium text-teal">VisionOps</p>
+        <div className="flex items-center gap-3">
+          <img src="/geek-logo.png" alt="" className="h-12 w-12" />
+          <p className="text-sm font-semibold text-ink">Geek vision</p>
+        </div>
         <h1 className="mt-2 text-2xl font-semibold">Sign in</h1>
         <p className="mt-2 text-sm text-slate-600">Desk occupancy for the office camera. People are not identified.</p>
         <label className="mt-6 block text-sm font-medium" htmlFor="username">Username</label>
