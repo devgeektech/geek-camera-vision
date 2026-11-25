@@ -32,12 +32,14 @@ type Runtime = {
   busy: boolean;
   pending: Buffer | null;
   lastFrameAt: number;
+  publishTail: Promise<void>;
   lastBeat: Map<string, number>;
   attempt: number;
   stopped: boolean;
 };
 
 const runtimes = new Map<string, Runtime>();
+const liveFps = 10;
 
 export function stopAllStreams(): void {
   for (const runtime of runtimes.values()) {
@@ -126,6 +128,7 @@ async function createRuntime(camera: Camera & { zones: DeskZone[] }): Promise<Ru
     busy: false,
     pending: null,
     lastFrameAt: 0,
+    publishTail: Promise.resolve(),
     lastBeat: new Map(),
     attempt: 0,
     stopped: false,
@@ -156,10 +159,14 @@ async function runLoop(cameraId: string): Promise<void> {
       ffmpegPath: env.ffmpegPath,
       url,
       transport: camera.transport === "udp" ? "udp" : "tcp",
-      fps: camera.targetFps,
+      fps: Math.max(camera.targetFps, liveFps),
       onFrame: (jpeg) => {
         runtime.lastFrameAt = Date.now();
-        void handleFrame(camera.id, jpeg);
+        const frame = Buffer.from(jpeg);
+        runtime.publishTail = runtime.publishTail
+          .then(() => publishLatest(camera.id, frame))
+          .catch((error) => console.error("frame save failed", error instanceof Error ? error.message : error));
+        void handleFrame(camera.id, frame);
       },
       onLog: (line) => {
         if (line) stderr = line.slice(0, 300);
@@ -200,10 +207,15 @@ async function handleFrame(cameraId: string, jpeg: Buffer): Promise<void> {
   }
 }
 
+async function publishLatest(cameraId: string, jpeg: Buffer): Promise<void> {
+  const dir = join(env.dataDir, cameraId);
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, "latest.jpg"), jpeg);
+}
+
 async function processFrame(camera: Camera & { zones: DeskZone[] }, jpeg: Buffer, runtime: Runtime): Promise<void> {
   const dir = join(env.dataDir, camera.id);
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, "latest.jpg"), jpeg);
   const detected = await detectPersons(jpeg, camera.confidence);
   const tracked = stepTracker(runtime.tracks, detected.boxes, runtime.nextTrackId, {
     iouThreshold: 0.3,
