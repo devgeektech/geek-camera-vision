@@ -11,5 +11,5 @@ COPY packages/shared/package.json packages/shared/package.json
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm --filter @visionops/db generate
-EXPOSE 4000
+EXPOSE 4010
 CMD ["pnpm", "--filter", "@visionops/api", "start"]

@@ -28,11 +28,11 @@ node scripts/download-model.mjs
 pnpm dev
 ```
 
-Open http://localhost:3000. The API is on port 4000.
+Open http://localhost:3010. The API is on port 4010.
 
 Fill `.env` before the first start. Required values include `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SESSION_SECRET`, and `WORKER_SHARED_SECRET`. `.env` is gitignored.
 
-`pnpm dev` is the development process. `docker compose up` also builds and starts the API, worker, and web, and those containers take ports 3000 and 4000. Do not run the full compose stack while `pnpm dev` is running.
+`pnpm dev` is the development process. `docker compose up` also builds and starts the API, worker, and web, and those containers take ports 3010 and 4010. Do not run the full compose stack while `pnpm dev` is running.
 
 FFmpeg must be on `PATH`, or set `FFMPEG_PATH` to the executable. The person model is `models/yolov8n.onnx`. The ONNX file is not committed. See `models/README.md`.
 
