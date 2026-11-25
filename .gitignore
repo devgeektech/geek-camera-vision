@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.next/
+.turbo/
+.env
+.env.local
+data/
+tools/ffmpeg/
+models/*.onnx
+*.log
+coverage/
+.DS_Store
+apps/web/next-env.d.ts

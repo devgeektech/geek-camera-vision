@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Camera {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  enabled     Boolean   @default(true)
+  vendor      String    @default("dahua")
+  host        String
+  port        Int       @default(554)
+  username    String
+  password    String
+  channel     Int       @default(3)
+  subtype     Int       @default(1)
+  path        String?
+  transport   String    @default("tcp")
+  targetFps   Int       @default(2)
+  confidence  Float     @default(0.45)
+  anchor      String    @default("foot")
+  status      String    @default("offline")
+  lastFrameAt DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  zones       DeskZone[]
+  events      OccupancyEvent[]
+  sessions    OccupancySession[]
+
+  @@unique([host, channel, subtype])
+  @@index([enabled])
+  @@index([status])
+}
+
+model DeskZone {
+  id              String    @id @default(cuid())
+  cameraId        String
+  camera          Camera    @relation(fields: [cameraId], references: [id], onDelete: Cascade)
+  name            String
+  polygon         Json
+  enabled         Boolean   @default(true)
+  color           String    @default("#0f766e")
+  sortOrder       Int       @default(0)
+  occupyConfirmMs Int?
+  vacantConfirmMs Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  events          OccupancyEvent[]
+  sessions        OccupancySession[]
+
+  @@unique([cameraId, name])
+  @@index([cameraId])
+}
+
+model OccupancyEvent {
+  id          String   @id @default(cuid())
+  cameraId    String
+  camera      Camera   @relation(fields: [cameraId], references: [id], onDelete: Restrict)
+  deskZoneId  String
+  deskZone    DeskZone @relation(fields: [deskZoneId], references: [id], onDelete: Restrict)
+  occurredAt  DateTime @default(now())
+  status      String
+  reason      String
+  personCount Int      @default(0)
+
+  @@index([deskZoneId, occurredAt])
+  @@index([cameraId, occurredAt])
+}
+
+model OccupancySession {
+  id              String    @id @default(cuid())
+  cameraId        String
+  camera          Camera    @relation(fields: [cameraId], references: [id], onDelete: Restrict)
+  deskZoneId      String
+  deskZone        DeskZone @relation(fields: [deskZoneId], references: [id], onDelete: Restrict)
+  startedAt       DateTime
+  endedAt         DateTime?
+  endReason       String?
+  maxPersonCount  Int       @default(1)
+  durationSeconds Int?
+
+  @@index([deskZoneId, startedAt])
+  @@index([deskZoneId, endedAt])
+  @@index([startedAt])
+}

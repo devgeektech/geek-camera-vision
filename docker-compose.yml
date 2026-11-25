@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: visionops
+      POSTGRES_PASSWORD: visionops
+      POSTGRES_DB: visionops
+    ports:
+      - "5433:5432"
+    volumes:
+      - visionops-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U visionops -d visionops"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://visionops:visionops@postgres:5432/visionops
+      API_INTERNAL_URL: http://api:4000
+      DATA_DIR: /data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    volumes:
+      - visionops-data:/data
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://visionops:visionops@postgres:5432/visionops
+      API_INTERNAL_URL: http://api:4000
+      DATA_DIR: /data
+      FFMPEG_PATH: ffmpeg
+      MODEL_PATH: /models/yolov8n.onnx
+    depends_on:
+      - api
+    volumes:
+      - visionops-data:/data
+      - ./models:/models:ro
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    environment:
+      API_INTERNAL_URL: http://api:4000
+      NEXT_PUBLIC_SOCKET_URL: http://127.0.0.1:4000
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  visionops-pg:
+  visionops-data:
