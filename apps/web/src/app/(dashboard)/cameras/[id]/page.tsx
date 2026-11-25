@@ -37,6 +37,7 @@ export default function CameraDetailPage({ params }: { params: Promise<{ id: str
       void api<DetectionFile>(`/backend/api/cameras/${id}/detections`).then(setDetections).catch(() => undefined);
     };
     refresh();
+    const keepMoving = setInterval(refresh, 700);
     const keepWatching = setInterval(() => {
       void fetch(`/backend/api/cameras/${id}/watch`, { method: "POST", credentials: "include" }).catch(() => undefined);
     }, 3000);
@@ -47,6 +48,7 @@ export default function CameraDetailPage({ params }: { params: Promise<{ id: str
       });
     }).catch(() => undefined);
     return () => {
+      clearInterval(keepMoving);
       clearInterval(keepWatching);
       socket?.close();
     };
